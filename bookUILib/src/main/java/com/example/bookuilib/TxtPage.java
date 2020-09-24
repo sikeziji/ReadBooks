@@ -11,7 +11,7 @@ public class TxtPage {
 
     private int titleLines;
 
-    private List<String> txtLists = null;
+    private List<TxtLine> txtLists = null;
 
     private String content;
 
@@ -49,5 +49,19 @@ public class TxtPage {
         return lines.size();
     }
 
+    public String getTitle() {
+        return title;
+    }
 
+    public int getTitleLines() {
+        return titleLines;
+    }
+
+    public List<TxtLine> getTxtLists() {
+        return txtLists;
+    }
+
+    public int getPoosition() {
+        return poosition;
+    }
 }

@@ -61,6 +61,10 @@ public class TxtChapter {
         return -1;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
     enum Status {
         LOADING, FINISH, ERROR, EMPTY, CATEGORY_EMPTY, CHANGE_SOURCE
     }

@@ -1,9 +1,15 @@
 package com.example.bookuilib;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Typeface;
 import android.os.Build;
+import android.text.Layout;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.widget.Toast;
@@ -226,6 +232,205 @@ public abstract class PageLoader {
         mTipPaint.setAlpha(TIP_ALPHA);
         mBatteryPaint.setAlpha(TIP_ALPHA);
         mTextEndPaint.setAlpha(TIP_ALPHA);
+    }
+
+    private synchronized void drawContent(Bitmap bitmap, TxtChapter txtChapter, TxtPage txtPage) {
+        if (bitmap == null) return;
+        Canvas canvas = new Canvas(bitmap);
+//        if (mPageMode == PageAnimation.Mode.SCROLL) {
+//            bitmap.eraseColor(Color.TRANSPARENT);
+//        }
+
+        Paint.FontMetrics fontMetricsForTitle = mTitlePaint.getFontMetrics();
+        Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
+
+        if (txtChapter.getStatus() != TxtChapter.Status.FINISH) {
+            //绘制字体
+            String tip = getStatusText(txtChapter);
+            drawErrorMsg(canvas, tip, 0);
+        } else {
+            float top = contentMarginHeight - fontMetrics.ascent;
+            //TODO ： 添加更改翻页模式功能
+//            if (mPageMode != PageAnimation.Mode.SCROLL) {
+//                top += readBookControl.getHideStatusBar() ? mMarginTop : mPageView.getStatusBarHeight() + mMarginTop;
+//            }
+            int ppp = 0;//pzl,文字位置
+            //对标题进行绘制
+            String str;
+            int strLength = 0;
+//            boolean isLight;
+            for (int i = 0; i < txtPage.getTitleLines(); ++i) {
+                str = txtPage.getLine(i);
+                strLength = strLength + str.length();
+//                isLight = ReadAloudService.running && readAloudParagraph == 0;
+//                mTitlePaint.setColor(isLight ? ThemeStore.accentColor(mContext) : readBookControl.getTextColor());
+
+                //进行绘制
+                canvas.drawText(str, mDisplayWidth / 2f, top, mTitlePaint);
+
+                //pzl
+                float leftposition = mDisplayWidth / 2;
+                float rightposition = 0;
+                float bottomposition = top + mTitlePaint.getFontMetrics().descent;
+                float TextHeight = Math.abs(fontMetricsForTitle.ascent) + Math.abs(fontMetricsForTitle.descent);
+
+                //TODO : 添加选择字符功能 TxtChar
+//                if (txtPage.getTxtLists() != null) {
+//                    for (TxtChar c : txtPage.getTxtLists().get(i).getCharsData()) {
+//                        rightposition = leftposition + c.getCharWidth();
+//                        Point tlp = new Point();
+//                        c.setTopLeftPosition(tlp);
+//                        tlp.x = (int) leftposition;
+//                        tlp.y = (int) (bottomposition - TextHeight);
+//
+//                        Point blp = new Point();
+//                        c.setBottomLeftPosition(blp);
+//                        blp.x = (int) leftposition;
+//                        blp.y = (int) bottomposition;
+//
+//                        Point trp = new Point();
+//                        c.setTopRightPosition(trp);
+//                        trp.x = (int) rightposition;
+//                        trp.y = (int) (bottomposition - TextHeight);
+//
+//                        Point brp = new Point();
+//                        c.setBottomRightPosition(brp);
+//                        brp.x = (int) rightposition;
+//                        brp.y = (int) bottomposition;
+//                        ppp++;
+//                        c.setIndex(ppp);
+//
+//                        leftposition = rightposition;
+//                    }
+//                }
+
+                //设置尾部间距
+                if (i == txtPage.getTitleLines() - 1) {
+                    top += titlePara;
+                } else {
+                    //行间距
+                    top += titleInterval;
+                }
+            }
+
+            if (txtPage.getLines().isEmpty()) {
+                return;
+            }
+            //对内容进行绘制
+            for (int i = txtPage.getTitleLines(); i < txtPage.getSize(); ++i) {
+                str = txtPage.getLine(i);
+                strLength = strLength + str.length();
+                //TODO： 设置画笔颜色 根据主题（白天，夜间）
+//                int paragraphLength = txtPage.getPosition() == 0 ? strLength : txtChapter.getPageLength(txtPage.getPosition() - 1) + strLength;
+//                isLight = ReadAloudService.running && readAloudParagraph == txtChapter.getParagraphIndex(paragraphLength);
+//                mTextPaint.setColor(isLight ? ThemeStore.accentColor(mContext) : readBookControl.getTextColor());
+                Layout tempLayout = new StaticLayout(str, mTextPaint, mVisibleWidth, Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+                float width = StaticLayout.getDesiredWidth(str, tempLayout.getLineStart(0), tempLayout.getLineEnd(0), mTextPaint);
+                //TODO： 绘制比例文字
+//                if (needScale(str)) {
+//                    drawScaledText(canvas, str, width, mTextPaint, top, i, txtPage.getTxtLists());
+//                } else {
+                    canvas.drawText(str, mMarginLeft, top, mTextPaint);
+//                }
+
+                //记录文字位置 --开始 pzl
+                float leftposition = mMarginLeft;
+                if (isFirstLineOfParagraph(str)) {
+                    String blanks = StringUtils.halfToFull("  ");
+                    //canvas.drawText(blanks, x, top, mTextPaint);
+                    float bw = StaticLayout.getDesiredWidth(blanks, mTextPaint);
+                    leftposition += bw;
+                }
+                float rightposition = 0;
+                float bottomposition = top + mTextPaint.getFontMetrics().descent;
+                float textHeight = Math.abs(fontMetrics.ascent) + Math.abs(fontMetrics.descent);
+
+                if (txtPage.getTxtLists() != null) {
+                    for (TxtChar c : txtPage.getTxtLists().get(i).getCharsData()) {
+                        rightposition = leftposition + c.getCharWidth();
+                        Point tlp = new Point();
+                        c.setTopLeftPosition(tlp);
+                        tlp.x = (int) leftposition;
+                        tlp.y = (int) (bottomposition - textHeight);
+
+                        Point blp = new Point();
+                        c.setBottomLeftPosition(blp);
+                        blp.x = (int) leftposition;
+                        blp.y = (int) bottomposition;
+
+                        Point trp = new Point();
+                        c.setTopRightPosition(trp);
+                        trp.x = (int) rightposition;
+                        trp.y = (int) (bottomposition - textHeight);
+
+                        Point brp = new Point();
+                        c.setBottomRightPosition(brp);
+                        brp.x = (int) rightposition;
+                        brp.y = (int) bottomposition;
+
+                        leftposition = rightposition;
+
+                        ppp++;
+                        c.setIndex(ppp);
+                    }
+                }
+                //记录文字位置 --结束 pzl
+
+                //设置尾部间距
+                if (str.endsWith("\n")) {
+                    top += textPara;
+                } else {
+                    top += textInterval;
+                }
+            }
+        }
+    }
+
+    //判断是不是d'hou
+    private boolean isFirstLineOfParagraph(String line) {
+        return line.length() > 3 && line.charAt(0) == (char) 12288 && line.charAt(1) == (char) 12288;
+    }
+
+
+
+    private void drawErrorMsg(Canvas canvas, String msg, float offset) {
+        Layout tempLayout = new StaticLayout(msg, mTextPaint, mVisibleWidth, Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        List<String> linesData = new ArrayList<>();
+        for (int i = 0; i < tempLayout.getLineCount(); i++) {
+            linesData.add(msg.substring(tempLayout.getLineStart(i), tempLayout.getLineEnd(i)));
+        }
+        float pivotY = (mDisplayHeight - textInterval * linesData.size()) / 3f - offset;
+        for (String str : linesData) {
+            float textWidth = mTextPaint.measureText(str);
+            float pivotX = (mDisplayWidth - textWidth) / 2;
+            canvas.drawText(str, pivotX, pivotY, mTextPaint);
+            pivotY += textInterval;
+        }
+    }
+
+
+    /**
+     * 获取状态文本
+     */
+    private String getStatusText(TxtChapter chapter) {
+        String tip = "";
+        switch (chapter.getStatus()) {
+            case LOADING:
+                tip = mContext.getString(R.string.loading);
+                break;
+            case ERROR:
+//                tip = mContext.getString(R.string.load_error_msg, curChapter().txtChapter.getMsg());
+                break;
+            case EMPTY:
+//                tip = mContext.getString(R.string.content_empty);
+                break;
+            case CATEGORY_EMPTY:
+//                tip = mContext.getString(R.string.chapter_list_empty);
+                break;
+            case CHANGE_SOURCE:
+//                tip = mContext.getString(R.string.on_change_source);
+        }
+        return tip;
     }
 
     void prepareDisplay(int w, int h) {
