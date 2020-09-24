@@ -1,0 +1,3 @@
+include ':bookUILib'
+include ':app'
+rootProject.name = "ReadBooks"
