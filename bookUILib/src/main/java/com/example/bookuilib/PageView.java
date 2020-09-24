@@ -73,4 +73,8 @@ public class PageView extends View {
         }
 
     }
+
+    public int getStatusBarHeight() {
+        return 0;
+    }
 }
